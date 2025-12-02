@@ -13,33 +13,41 @@ Gemini Nano Banana Proで作った「グリーンバック画像」から、ク�
    cd Gemini-Transparent-Background
    ```
 
-2. **仮想環境の作成と有効化**
+2. **Pythonのインストール** (まだの場合)
+   Python 3.8以上が必要です。インストールされていない場合は、[公式サイト](https://www.python.org/downloads/)からダウンロードするか、パッケージマネージャー（Homebrewなど）を使ってインストールしてください。
+
+   ```bash
+   brew install python@3.12
+   ```
+
+   ```bash
+   # バージョンの確認
+   python3 --version
+   ```
+
+3. **仮想環境の作成と有効化**
+
    ```bash
    # 仮想環境の作成 
    python3 -m venv .venv
 
-   # 仮想環境の有効化 
+   # 仮想環境の有効化 (Mac/Linux)
    source .venv/bin/activate
 
-   # 仮想環境の有効化
-   # .venv\Scripts\activate
+   # 仮想環境の有効化 (Windows)
+   .venv\Scripts\activate
    ```
 
-3. **パッケージのインストール**
+4. **パッケージのインストール**
+   Webアプリとして使用するため、必要な依存関係を含めてインストールします。
    ```bash
-   pip install -e .
+   pip install -e ".[web]"
    ```
-
-## 使い方
 
 ## 使い方
 
 ### Webアプリ (Gradio)
-Webアプリを使用する場合は、追加の依存関係をインストールしてください。
-
-```bash
-pip install -e ".[web]"
-```
+以下のコマンドでWebアプリを起動します。
 
 **Gemini APIの設定 (画像生成機能を使う場合)**
 `.env.example` をコピーして `.env` ファイルを作成し、APIキーを設定してください。
