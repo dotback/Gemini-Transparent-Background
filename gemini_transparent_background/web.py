@@ -99,6 +99,61 @@ def generate_and_process(prompt, despill, feather, erode, dilate):
         print(f"Generation Error: {e}")
         raise gr.Error(f"Generation Error: {e}")
 
+def process_green_bg_conversion(image, prompt, despill, feather, erode, dilate):
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise gr.Error("GEMINI_API_KEY environment variable is not set. Please set it in your .env file.")
+    
+    if image is None:
+        return None, None
+
+    try:
+        client = genai.Client(api_key=api_key)
+        
+        # Prepare prompt for background replacement
+        full_prompt = f"{prompt}. Change the background to a solid bright green (#00FF00). Keep the subject exactly as is. High quality, photorealistic."
+        
+        # Convert numpy image to PIL for API
+        image_pil = Image.fromarray(image)
+        
+        # Gemini models use generate_content for image editing/generation
+        # We pass the image as input along with the prompt
+        response = client.models.generate_content(
+            model='gemini-3-pro-image-preview',
+            contents=[full_prompt, image_pil],
+        )
+        
+        # Handle response
+        if response.text:
+            print(f"Generated text instead of image: {response.text}")
+            raise gr.Error(f"Generated text instead of image: {response.text}")
+            
+        image_data = None
+        
+        # Try to find image in parts
+        if response.candidates and response.candidates[0].content.parts:
+            for part in response.candidates[0].content.parts:
+                if part.inline_data:
+                    image_data = part.inline_data.data
+                    break
+        
+        if image_data:
+            # Convert to numpy array for processing
+            generated_pil = Image.open(io.BytesIO(image_data))
+            generated_np = np.array(generated_pil)
+            
+            # Process the image (remove green background)
+            processed_image = process_image(generated_np, despill, feather, erode, dilate)
+            
+            return generated_np, processed_image
+        else:
+            print("No image generated in response")
+            raise gr.Error("No image generated in response")
+
+    except Exception as e:
+        print(f"Conversion Error: {e}")
+        raise gr.Error(f"Conversion Error: {e}")
+
 with gr.Blocks(title="Gemini Transparent Background") as demo:
     gr.Markdown("# Gemini Transparent Background (背景透過ツール)")
     gr.Markdown("Gemini Nano Banana Proなどで生成されたグリーンバック画像をアップロードして、背景を透過します。")
@@ -155,12 +210,39 @@ with gr.Blocks(title="Gemini Transparent Background") as demo:
                 outputs=[gen_output_original, gen_output_processed]
             )
 
+        with gr.TabItem("背景置換＆透過"):
+            gr.Markdown("### 既存の画像の背景をGeminiで緑色にしてから、透過処理を行います")
+            
+            with gr.Column():
+                input_image_rep = gr.Image(label="入力画像 (Input)", type="numpy")
+                prompt_input_rep = gr.Textbox(label="プロンプト (Optional)", placeholder="例: Keep the cat, change background to green. (空欄でも可)", info="被写体を明示したい場合に記述してください。")
+                
+                with gr.Accordion("詳細設定", open=False):
+                    despill_rep = gr.Slider(minimum=0.0, maximum=1.0, value=0.7, label="緑被り除去")
+                    feather_rep = gr.Slider(minimum=0, maximum=20, step=1, value=5, label="エッジぼかし")
+                    erode_rep = gr.Slider(minimum=0, maximum=5, step=1, value=0, label="収縮")
+                    dilate_rep = gr.Slider(minimum=0, maximum=5, step=1, value=1, label="膨張")
+
+                replace_btn = gr.Button("背景を緑にして透過する", variant="primary")
+            
+            with gr.Row():
+                with gr.Column():
+                    rep_output_green = gr.Image(label="背景置換後 (Green BG)", type="numpy")
+                with gr.Column():
+                    rep_output_processed = gr.Image(label="透過後の画像 (Processed)", type="numpy")
+
+            replace_btn.click(
+                fn=process_green_bg_conversion,
+                inputs=[input_image_rep, prompt_input_rep, despill_rep, feather_rep, erode_rep, dilate_rep],
+                outputs=[rep_output_green, rep_output_processed]
+            )
+
     gr.Markdown("""
     ### 使い方
     1. **画像をアップロード**: 手持ちのグリーンバック画像を処理します。
     2. **Geminiで生成して透過**: プロンプトを入力して画像を生成し、その場で背景透過します。
+    3. **背景置換＆透過**: 手持ちの画像の背景をAIで緑色に変えてから、透過処理を行います。
        - 環境変数 `GEMINI_API_KEY` の設定が必要です。
-       - プロンプトの末尾に自動で「緑色の背景」の指定が追加されます。
     """)
 
 if __name__ == "__main__":
