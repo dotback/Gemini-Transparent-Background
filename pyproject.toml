@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gemini-transparent-background"
+version = "0.1.0"
+description = "Remove green background from AI generated images (Gemini Nano Banana Pro, etc.)"
+readme = "README.md"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "opencv-python>=4.5.0",
+    "numpy>=1.20.0",
+    "Pillow>=8.0.0",
+]
+
+[project.optional-dependencies]
+web = ["gradio>=4.0.0", "google-genai", "python-dotenv"]
+
+
+
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/Gemini-Transparent-Background"
+"Bug Tracker" = "https://github.com/yourusername/Gemini-Transparent-Background/issues"
+
+[tool.setuptools.packages.find]
+include = ["gemini_transparent_background*"]
+exclude = []
